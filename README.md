@@ -45,9 +45,24 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 
 ## Tech Stack
 
-- TypeScript, Express 5, @line/bot-sdk v10
-- Google Sheets 作為資料儲存
-- Render Free Tier 部署
+| 類別 | 技術 |
+|------|------|
+| 語言 | TypeScript (strict mode, ESM) |
+| 執行環境 | Node.js >= 22 |
+| Web 框架 | Express 5 |
+| LINE SDK | @line/bot-sdk v10 |
+| 資料儲存 | Google Sheets（via `googleapis` + Service Account JWT） |
+| 套件管理 | pnpm 10（via corepack） |
+| Lint / Format | ESLint 9 (flat config) + Prettier |
+| 開發工具 | tsx (watch mode) |
+
+## CI/CD
+
+- **部署平台**：[Render](https://render.com) Free Tier
+- **Production URL**：https://galleon-32wd.onrender.com
+- **部署方式**：Render 連接 GitHub repo，push 到 `master` 分支後自動觸發部署
+- **Build Command**：`pnpm install && pnpm build`
+- **Start Command**：`pnpm start`
 
 ## 環境變數
 

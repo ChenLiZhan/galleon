@@ -6,7 +6,9 @@
 - pnpm 10 for package management (via corepack, `packageManager` field in package.json)
 - ESLint 9 (flat config) + Prettier for linting/formatting
 - Google Sheets as data storage (via `googleapis` + Service Account JWT)
-- Deploy target: Render Free Tier
+- Deploy target: Render Free Tier — auto-deploy on push to `master`
+- Production URL: https://galleon-32wd.onrender.com
+- Render build: `pnpm install && pnpm build`, start: `pnpm start`
 
 ## Commands
 - `pnpm dev` - 開發模式 (tsx watch)
