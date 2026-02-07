@@ -26,12 +26,18 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 ### `sell` - 賣出股票
 
 ```
-@Bot <user> sell <stock_code> <amount> <price>
+@Bot <user> sell <stock_code> <amount>
 ```
 
-參數同 `buy`。賣出後均價不變，僅減少持股數量。全部賣出時自動移除該筆記錄。
+| 參數 | 說明 | 範例 |
+|------|------|------|
+| `user` | 使用者暱稱 | `lee` |
+| `stock_code` | 股票代號 | `2330` |
+| `amount` | 賣出股數（正整數） | `5` |
 
-範例：`@Bot lee sell 2330 5 550`
+賣出後均價不變，僅減少持股數量。全部賣出時自動移除該筆記錄。
+
+範例：`@Bot lee sell 2330 5`
 
 ### `hold` - 查詢持股
 

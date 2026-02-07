@@ -15,9 +15,9 @@ export function parseCommand(text: string): Command | string {
     return `格式錯誤，請輸入指令，可用指令：buy、sell、hold、help`;
   }
 
-  if (action === 'buy' || action === 'sell') {
+  if (action === 'buy') {
     if (parts.length < 5) {
-      return `格式錯誤，正確格式：[user] ${action} [stock_code] [amount] [price]`;
+      return `格式錯誤，正確格式：[user] buy [stock_code] [amount] [price]`;
     }
     const [, , stockCode, amountStr, priceStr] = parts;
     const amount = Number(amountStr);
@@ -33,7 +33,24 @@ export function parseCommand(text: string): Command | string {
       return `price 必須是正數`;
     }
 
-    return { type: action, user, stockCode, amount, price };
+    return { type: 'buy', user, stockCode, amount, price };
+  }
+
+  if (action === 'sell') {
+    if (parts.length < 4) {
+      return `格式錯誤，正確格式：[user] sell [stock_code] [amount]`;
+    }
+    const [, , stockCode, amountStr] = parts;
+    const amount = Number(amountStr);
+
+    if (!stockCode) {
+      return `請提供 stock_code`;
+    }
+    if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      return `amount 必須是正整數`;
+    }
+
+    return { type: 'sell', user, stockCode, amount };
   }
 
   if (action === 'hold') {
@@ -114,11 +131,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
 
   if (remainingAmount === 0) {
     await deleteHolding(cmd.user, cmd.stockCode);
-    return (
-      `成功！\n` +
-      `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
-      `已全部賣出`
-    );
+    return `成功！\n${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n已全部賣出`;
   }
 
   await upsertHolding({
@@ -131,7 +144,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
 
   return (
     `成功！\n` +
-    `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
+    `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n` +
     `剩餘：${remainingAmount}股，均價：${existing.avgPrice}`
   );
 }
@@ -157,8 +170,8 @@ function handleHelp(): string {
     '  範例：lee buy 2330 10 500',
     '',
     '▸ sell — 賣出股票',
-    '  格式：[user] sell [股票代號] [數量] [價格]',
-    '  範例：lee sell 2330 5 520',
+    '  格式：[user] sell [股票代號] [數量]',
+    '  範例：lee sell 2330 5',
     '',
     '▸ hold — 查詢持股',
     '  格式：[user] hold',

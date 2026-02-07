@@ -24,7 +24,8 @@
 - Never create or import unused library/const/object
 
 ## Gotchas
-- Bot command format: `[user] [action] [args...]` (user comes FIRST, e.g., `lee buy 2330 10 500`, `lee hold`)
+- Bot command format: `[user] [action] [args...]` (user comes FIRST, e.g., `lee buy 2330 10 500`, `lee sell 2330 10`, `lee hold`)
+- `buy` requires price (for avg price calc), `sell` does not — when changing command args, also update `README.md` and `handleHelp()` in `commands.ts`
 - Express error middleware MUST have exactly 4 params `(err, req, res, next)` — prefix unused with `_`
 - ESLint 10 has peer dep conflicts with typescript-eslint — stay on ESLint 9
 - `eslint-plugin-prettier/recommended` already includes `eslint-config-prettier`, don't add both
