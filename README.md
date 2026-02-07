@@ -9,7 +9,7 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 ### `buy` - 買入股票
 
 ```
-@Bot buy <user> <stock_code> <amount> <price>
+@Bot <user> buy <stock_code> <amount> <price>
 ```
 
 | 參數 | 說明 | 範例 |
@@ -19,29 +19,29 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 | `amount` | 買入股數（正整數） | `10` |
 | `price` | 每股價格（正數） | `500` |
 
-範例：`@Bot buy leo 2330 10 500`
+範例：`@Bot leo buy 2330 10 500`
 
 買入時自動以**加權平均**計算均價。
 
 ### `sell` - 賣出股票
 
 ```
-@Bot sell <user> <stock_code> <amount> <price>
+@Bot <user> sell <stock_code> <amount> <price>
 ```
 
 參數同 `buy`。賣出後均價不變，僅減少持股數量。全部賣出時自動移除該筆記錄。
 
-範例：`@Bot sell leo 2330 5 550`
+範例：`@Bot leo sell 2330 5 550`
 
-### `show` - 查詢持股
+### `hold` - 查詢持股
 
 ```
-@Bot show <user>
+@Bot <user> hold
 ```
 
 顯示該使用者的所有持股及均價。
 
-範例：`@Bot show leo`
+範例：`@Bot leo hold`
 
 ## Tech Stack
 

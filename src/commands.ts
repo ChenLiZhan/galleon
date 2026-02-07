@@ -3,18 +3,23 @@ import type { Command } from './types.js';
 
 export function parseCommand(text: string): Command | string {
   const parts = text.trim().split(/\s+/);
-  const action = parts[0]?.toLowerCase();
+  const user = parts[0];
+  const action = parts[1]?.toLowerCase();
+
+  if (!user) {
+    return `格式錯誤，請輸入指令，可用指令：buy、sell、hold`;
+  }
 
   if (action === 'buy' || action === 'sell') {
     if (parts.length < 5) {
-      return `格式錯誤，正確格式：${action} [user] [stock_code] [amount] [price]`;
+      return `格式錯誤，正確格式：[user] ${action} [stock_code] [amount] [price]`;
     }
-    const [, user, stockCode, amountStr, priceStr] = parts;
+    const [, , stockCode, amountStr, priceStr] = parts;
     const amount = Number(amountStr);
     const price = Number(priceStr);
 
-    if (!user || !stockCode) {
-      return `請提供 user 和 stock_code`;
+    if (!stockCode) {
+      return `請提供 stock_code`;
     }
     if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
       return `amount 必須是正整數`;
@@ -26,15 +31,11 @@ export function parseCommand(text: string): Command | string {
     return { type: action, user, stockCode, amount, price };
   }
 
-  if (action === 'show') {
-    const user = parts[1];
-    if (!user) {
-      return `格式錯誤，正確格式：show [user]`;
-    }
-    return { type: 'show', user };
+  if (action === 'hold') {
+    return { type: 'hold', user };
   }
 
-  return `未知指令「${action}」，可用指令：buy、sell、show`;
+  return `未知指令「${action}」，可用指令：buy、sell、hold`;
 }
 
 export async function executeCommand(command: Command): Promise<string> {
@@ -43,8 +44,8 @@ export async function executeCommand(command: Command): Promise<string> {
       return handleBuy(command);
     case 'sell':
       return handleSell(command);
-    case 'show':
-      return handleShow(command.user);
+    case 'hold':
+      return handleHold(command.user);
   }
 }
 
@@ -128,7 +129,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
   );
 }
 
-async function handleShow(user: string): Promise<string> {
+async function handleHold(user: string): Promise<string> {
   const holdings = await getHoldings(user);
 
   if (holdings.length === 0) {

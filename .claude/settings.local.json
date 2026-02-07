@@ -13,7 +13,8 @@
       "Bash(pnpm self-update:*)",
       "WebSearch",
       "Bash(corepack enable:*)",
-      "Bash(corepack use:*)"
+      "Bash(corepack use:*)",
+      "Bash(pnpm lint:fix:*)"
     ]
   }
 }
