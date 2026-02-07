@@ -9,4 +9,5 @@ export interface Holding {
 export type Command =
   | { type: 'buy'; user: string; stockCode: string; amount: number; price: number }
   | { type: 'sell'; user: string; stockCode: string; amount: number; price: number }
-  | { type: 'hold'; user: string };
+  | { type: 'hold'; user: string }
+  | { type: 'help' };

@@ -3,11 +3,16 @@ import type { Command } from './types.js';
 
 export function parseCommand(text: string): Command | string {
   const parts = text.trim().split(/\s+/);
+
+  if (parts[0]?.toLowerCase() === 'help') {
+    return { type: 'help' };
+  }
+
   const user = parts[0];
   const action = parts[1]?.toLowerCase();
 
   if (!user) {
-    return `格式錯誤，請輸入指令，可用指令：buy、sell、hold`;
+    return `格式錯誤，請輸入指令，可用指令：buy、sell、hold、help`;
   }
 
   if (action === 'buy' || action === 'sell') {
@@ -35,7 +40,7 @@ export function parseCommand(text: string): Command | string {
     return { type: 'hold', user };
   }
 
-  return `未知指令「${action}」，可用指令：buy、sell、hold`;
+  return `未知指令「${action}」，可用指令：buy、sell、hold、help`;
 }
 
 export async function executeCommand(command: Command): Promise<string> {
@@ -46,6 +51,8 @@ export async function executeCommand(command: Command): Promise<string> {
       return handleSell(command);
     case 'hold':
       return handleHold(command.user);
+    case 'help':
+      return handleHelp();
   }
 }
 
@@ -69,7 +76,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
     });
 
     return (
-      `買入成功！\n` +
+      `成功！\n` +
       `${cmd.user} 買入 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
       `持有：${totalAmount}股，均價：${newAvgPrice}`
     );
@@ -84,7 +91,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
   });
 
   return (
-    `買入成功！\n` +
+    `成功！\n` +
     `${cmd.user} 買入 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
     `持有：${cmd.amount}股，均價：${cmd.price}`
   );
@@ -108,7 +115,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
   if (remainingAmount === 0) {
     await deleteHolding(cmd.user, cmd.stockCode);
     return (
-      `賣出成功！\n` +
+      `成功！\n` +
       `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
       `已全部賣出`
     );
@@ -123,7 +130,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
   });
 
   return (
-    `賣出成功！\n` +
+    `成功！\n` +
     `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
     `剩餘：${remainingAmount}股，均價：${existing.avgPrice}`
   );
@@ -139,4 +146,25 @@ async function handleHold(user: string): Promise<string> {
   const lines = holdings.map((h) => `${h.stockCode}：${h.amount}股，均價 ${h.avgPrice}`);
 
   return `${user} 的持股：\n${lines.join('\n')}`;
+}
+
+function handleHelp(): string {
+  return [
+    '📋 可用指令一覽',
+    '',
+    '▸ buy — 買入股票',
+    '  格式：[user] buy [股票代號] [數量] [價格]',
+    '  範例：lee buy 2330 10 500',
+    '',
+    '▸ sell — 賣出股票',
+    '  格式：[user] sell [股票代號] [數量] [價格]',
+    '  範例：lee sell 2330 5 520',
+    '',
+    '▸ hold — 查詢持股',
+    '  格式：[user] hold',
+    '  範例：lee hold',
+    '',
+    '▸ help — 顯示此說明',
+    '  格式：help',
+  ].join('\n');
 }
