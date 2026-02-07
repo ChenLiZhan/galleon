@@ -33,4 +33,7 @@
 - `GOOGLE_PRIVATE_KEY` env var needs `.replace(/\\n/g, '\n')` — already handled in `src/config.ts`
 - LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text
 - Google Sheets API: `findRowIndex` must skip header row (slice(1)), row numbers are 1-based for API calls
+- Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:F`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
+- Market detection: `detectMarket()` in `commands.ts` — pure digits=TW, letters=US, digits+`.T`=JP. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
+- Adding a field to `Holding`: update `types.ts` (interface), `sheets.ts` (HEADERS, ranges, row mapping, rowData), and all `upsertHolding()` call sites in `commands.ts`
 - pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate

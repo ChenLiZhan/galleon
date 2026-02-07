@@ -1,8 +1,11 @@
+export type Market = 'TW' | 'US' | 'JP';
+
 export interface Holding {
   user: string;
   stockCode: string;
   amount: number;
   avgPrice: number;
+  market: Market;
   updatedAt: string;
 }
 

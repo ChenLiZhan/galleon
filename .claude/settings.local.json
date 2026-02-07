@@ -14,7 +14,8 @@
       "WebSearch",
       "Bash(corepack enable:*)",
       "Bash(corepack use:*)",
-      "Bash(pnpm lint:fix:*)"
+      "Bash(pnpm lint:fix:*)",
+      "WebFetch(domain:www.alphavantage.co)"
     ]
   }
 }

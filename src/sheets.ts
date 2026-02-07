@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { config } from './config.js';
 import type { Holding } from './types.js';
 
-const HEADERS = ['user', 'stock_code', 'amount', 'avg_price', 'updated_at'];
+const HEADERS = ['user', 'stock_code', 'amount', 'avg_price', 'market', 'updated_at'];
 const SHEET_NAME = 'Holdings';
 
 const auth = new google.auth.JWT({
@@ -16,13 +16,13 @@ const sheets = google.sheets({ version: 'v4', auth });
 async function ensureHeaders(): Promise<void> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `${SHEET_NAME}!A1:E1`,
+    range: `${SHEET_NAME}!A1:F1`,
   });
 
   if (!res.data.values || res.data.values.length === 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A1:E1`,
+      range: `${SHEET_NAME}!A1:F1`,
       valueInputOption: 'RAW',
       requestBody: { values: [HEADERS] },
     });
@@ -34,7 +34,7 @@ export async function getHoldings(user: string): Promise<Holding[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `${SHEET_NAME}!A:E`,
+    range: `${SHEET_NAME}!A:F`,
   });
 
   const rows = res.data.values;
@@ -42,13 +42,14 @@ export async function getHoldings(user: string): Promise<Holding[]> {
 
   return rows
     .slice(1)
-    .filter((row) => row.length >= 5 && row[0] === user && !isNaN(Number(row[2])))
+    .filter((row) => row.length >= 6 && row[0] === user && !isNaN(Number(row[2])))
     .map((row) => ({
       user: row[0],
       stockCode: row[1],
       amount: Number(row[2]),
       avgPrice: Number(row[3]),
-      updatedAt: row[4],
+      market: row[4] as Holding['market'],
+      updatedAt: row[5],
     }));
 }
 
@@ -74,13 +75,14 @@ export async function upsertHolding(holding: Holding): Promise<void> {
     holding.stockCode,
     holding.amount,
     holding.avgPrice,
+    holding.market,
     holding.updatedAt,
   ];
 
   if (rowIndex === -1) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A:E`,
+      range: `${SHEET_NAME}!A:F`,
       valueInputOption: 'RAW',
       requestBody: { values: [rowData] },
     });
@@ -88,7 +90,7 @@ export async function upsertHolding(holding: Holding): Promise<void> {
     const row = rowIndex + 1;
     await sheets.spreadsheets.values.update({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A${row}:E${row}`,
+      range: `${SHEET_NAME}!A${row}:F${row}`,
       valueInputOption: 'RAW',
       requestBody: { values: [rowData] },
     });

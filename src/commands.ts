@@ -1,5 +1,11 @@
 import { getHoldings, upsertHolding, deleteHolding } from './sheets.js';
-import type { Command } from './types.js';
+import type { Command, Holding, Market } from './types.js';
+
+function detectMarket(stockCode: string): Market {
+  if (/^\d+\.T$/i.test(stockCode)) return 'JP';
+  if (/^\d+$/.test(stockCode)) return 'TW';
+  return 'US';
+}
 
 export function parseCommand(text: string): Command | string {
   const parts = text.trim().split(/\s+/);
@@ -89,6 +95,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
       stockCode: cmd.stockCode,
       amount: totalAmount,
       avgPrice: newAvgPrice,
+      market: existing.market,
       updatedAt: now,
     });
 
@@ -104,6 +111,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
     stockCode: cmd.stockCode,
     amount: cmd.amount,
     avgPrice: cmd.price,
+    market: detectMarket(cmd.stockCode),
     updatedAt: now,
   });
 
@@ -139,6 +147,7 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
     stockCode: cmd.stockCode,
     amount: remainingAmount,
     avgPrice: existing.avgPrice,
+    market: existing.market,
     updatedAt: now,
   });
 
@@ -149,6 +158,14 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
   );
 }
 
+const MARKET_HEADERS: Record<Market, string> = {
+  TW: '🇹🇼 台股',
+  US: '🇺🇸 美股',
+  JP: '🇯🇵 日股',
+};
+
+const MARKET_ORDER: Market[] = ['TW', 'US', 'JP'];
+
 async function handleHold(user: string): Promise<string> {
   const holdings = await getHoldings(user);
 
@@ -156,9 +173,22 @@ async function handleHold(user: string): Promise<string> {
     return `${user} 目前沒有持股`;
   }
 
-  const lines = holdings.map((h) => `${h.stockCode}：${h.amount}股，均價 ${h.avgPrice}`);
+  const byMarket = new Map<Market, Holding[]>();
+  for (const h of holdings) {
+    const group = byMarket.get(h.market) ?? [];
+    group.push(h);
+    byMarket.set(h.market, group);
+  }
 
-  return `${user} 的持股：\n${lines.join('\n')}`;
+  const sections: string[] = [];
+  for (const market of MARKET_ORDER) {
+    const group = byMarket.get(market);
+    if (!group) continue;
+    const lines = group.map((h) => `  ${h.stockCode}：${h.amount}股，均價 ${h.avgPrice}`);
+    sections.push(`${MARKET_HEADERS[market]}\n${lines.join('\n')}`);
+  }
+
+  return `${user} 的持股：\n\n${sections.join('\n\n')}`;
 }
 
 function handleHelp(): string {
@@ -173,11 +203,16 @@ function handleHelp(): string {
     '  格式：[user] sell [股票代號] [數量]',
     '  範例：lee sell 2330 5',
     '',
-    '▸ hold — 查詢持股',
+    '▸ hold — 查詢持股（依市場分類）',
     '  格式：[user] hold',
     '  範例：lee hold',
     '',
     '▸ help — 顯示此說明',
     '  格式：help',
+    '',
+    '📌 股票代號與市場判斷',
+    '  純數字（2330）→ 🇹🇼 台股',
+    '  英文（AAPL）→ 🇺🇸 美股',
+    '  數字.T（7203.T）→ 🇯🇵 日股',
   ].join('\n');
 }
