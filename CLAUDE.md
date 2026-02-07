@@ -3,8 +3,10 @@
 ## Tech Stack
 - TypeScript (strict mode), Express 5, @line/bot-sdk v10
 - ESM modules (`"type": "module"` in package.json)
-- pnpm for package management
+- pnpm 10 for package management (via corepack, `packageManager` field in package.json)
 - ESLint 9 (flat config) + Prettier for linting/formatting
+- Google Sheets as data storage (via `googleapis` + Service Account JWT)
+- Deploy target: Render Free Tier
 
 ## Commands
 - `pnpm dev` - 開發模式 (tsx watch)
@@ -23,3 +25,8 @@
 - Express error middleware MUST have exactly 4 params `(err, req, res, next)` — prefix unused with `_`
 - ESLint 10 has peer dep conflicts with typescript-eslint — stay on ESLint 9
 - `eslint-plugin-prettier/recommended` already includes `eslint-config-prettier`, don't add both
+- `google.auth.JWT` uses options object `{ email, key, scopes }`, NOT positional args
+- `GOOGLE_PRIVATE_KEY` env var needs `.replace(/\\n/g, '\n')` — already handled in `src/config.ts`
+- LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text
+- Google Sheets API: `findRowIndex` must skip header row (slice(1)), row numbers are 1-based for API calls
+- pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate
