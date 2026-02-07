@@ -8,7 +8,12 @@
       "Bash(npx eslint:*)",
       "Bash(npx tsc:*)",
       "Bash(pnpm build:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(pnpm self-update:*)",
+      "WebSearch",
+      "Bash(corepack enable:*)",
+      "Bash(corepack use:*)"
     ]
   }
 }
