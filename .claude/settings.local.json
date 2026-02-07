@@ -6,7 +6,9 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(pnpm add:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm lint:*)"
     ]
   }
 }

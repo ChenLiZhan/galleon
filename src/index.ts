@@ -4,10 +4,10 @@ import {
   SignatureValidationFailed,
   JSONParseError,
   WebhookEvent,
-  TextMessage,
 } from '@line/bot-sdk';
 import express, { Request, Response, NextFunction } from 'express';
 import { config } from './config.js';
+import { parseCommand, executeCommand } from './commands.js';
 
 const client = new messagingApi.MessagingApiClient({
   channelAccessToken: config.channelAccessToken,
@@ -28,16 +28,43 @@ app.post('/callback', middleware({ channelSecret: config.channelSecret }), (req,
     });
 });
 
-async function handleEvent(event: WebhookEvent): Promise<unknown> {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    return null;
-  }
+function extractCommandText(event: WebhookEvent): string | null {
+  if (event.type !== 'message' || event.message.type !== 'text') return null;
 
-  const echo: TextMessage = { type: 'text', text: event.message.text };
+  const { text, mention } = event.message;
+
+  if (!mention?.mentionees?.length) return null;
+
+  const firstMention = mention.mentionees[0];
+  const mentionText = text.slice(0, firstMention.index + firstMention.length);
+  const commandText = text.slice(mentionText.length).trim();
+
+  return commandText || null;
+}
+
+async function handleEvent(event: WebhookEvent): Promise<unknown> {
+  if (event.type !== 'message' || event.message.type !== 'text') return null;
+
+  const commandText = extractCommandText(event);
+  if (!commandText) return null;
+
+  const parsed = parseCommand(commandText);
+
+  let replyText: string;
+  if (typeof parsed === 'string') {
+    replyText = parsed;
+  } else {
+    try {
+      replyText = await executeCommand(parsed);
+    } catch (err) {
+      console.error('Command execution error:', err);
+      replyText = '系統錯誤，請稍後再試';
+    }
+  }
 
   return client.replyMessage({
     replyToken: event.replyToken,
-    messages: [echo],
+    messages: [{ type: 'text', text: replyText }],
   });
 }
 
