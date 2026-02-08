@@ -6,9 +6,9 @@
 - pnpm 10 for package management (via corepack, `packageManager` field in package.json)
 - ESLint 9 (flat config) + Prettier for linting/formatting
 - Google Sheets as data storage (via `googleapis` + Service Account JWT)
-- Deploy target: Render Free Tier — auto-deploy on push to `master`
-- Production URL: https://galleon-32wd.onrender.com
-- Render build: `pnpm install && pnpm build`, start: `pnpm start`
+- Deploy target: Oracle Cloud Free Tier VM — Docker Compose + GitHub Actions CI/CD
+- Production URL: https://galleon.chenlizhan.com
+- Reverse proxy: Caddy (managed by `gateway` repo), routes `galleon.chenlizhan.com` → `galleon:3000`
 
 ## Commands
 - `pnpm dev` - 開發模式 (tsx watch)
@@ -37,3 +37,11 @@
 - Market detection: `detectMarket()` in `commands.ts` — pure digits=TW, letters=US, digits+`.T`=JP. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
 - Adding a field to `Holding`: update `types.ts` (interface), `sheets.ts` (HEADERS, ranges, row mapping, rowData), and all `upsertHolding()` call sites in `commands.ts`
 - pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate
+- Dockerfile uses multi-stage build: builder stage compiles TypeScript, production stage only has `dist/` + prod dependencies
+- Docker container runs as non-root user `nodejs` (UID 1001)
+- `docker-compose.yml` uses `env_file: .env` to load secrets — `.env` stays on the VM, never in CI/CD
+- Container name `galleon` is used as DNS hostname by gateway Caddy — do NOT rename without updating `gateway/Caddyfile`
+- Health check: `GET /health` returns `200 OK` — used by both Docker healthcheck and Caddy upstream
+- CI/CD (`.github/workflows/deploy.yml`): lint + build on GitHub runner, then SSH to VM for `git pull` + `docker compose build` + `docker compose up -d`
+- GitHub Actions Secrets needed: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`
+- VM path: `~/apps/galleon`

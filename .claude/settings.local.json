@@ -15,7 +15,10 @@
       "Bash(corepack enable:*)",
       "Bash(corepack use:*)",
       "Bash(pnpm lint:fix:*)",
-      "WebFetch(domain:www.alphavantage.co)"
+      "WebFetch(domain:www.alphavantage.co)",
+      "WebFetch(domain:openapi.twse.com.tw)",
+      "WebFetch(domain:finnhub.io)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.git/
+.github/
+.claude/
+*.log
+.DS_Store
+README.md
+CLAUDE.md

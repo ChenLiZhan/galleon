@@ -84,11 +84,11 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 
 ## CI/CD
 
-- **部署平台**：[Render](https://render.com) Free Tier
-- **Production URL**：https://galleon-32wd.onrender.com
-- **部署方式**：Render 連接 GitHub repo，push 到 `master` 分支後自動觸發部署
-- **Build Command**：`pnpm install && pnpm build`
-- **Start Command**：`pnpm start`
+- **部署平台**：Oracle Cloud Free Tier VM（Docker Compose）
+- **Production URL**：https://galleon.chenlizhan.com
+- **Webhook URL**：https://galleon.chenlizhan.com/callback
+- **部署方式**：Push 到 `master` → GitHub Actions 執行 lint + build 檢查 → SSH 到 VM 部署
+- **反向代理**：由 [gateway](../gateway) repo 的 Caddy 統一管理 HTTPS 與路由
 
 ## 環境變數
 
@@ -109,6 +109,23 @@ pnpm dev
 ```
 
 ## 部署
+
+### Docker（Production）
+
+```bash
+# 首次部署
+cp .env.example .env
+nano .env  # 填入實際環境變數
+docker compose build
+docker compose up -d
+
+# 更新部署（或透過 GitHub Actions 自動觸發）
+git pull origin master
+docker compose build
+docker compose up -d
+```
+
+### 本地直接執行
 
 ```bash
 pnpm build
