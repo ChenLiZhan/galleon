@@ -1,6 +1,6 @@
 services:
   galleon:
-    build: .
+    image: ghcr.io/chenlizhan/galleon:latest
     container_name: galleon
     restart: always
     env_file: .env

@@ -87,7 +87,8 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 - **部署平台**：Oracle Cloud Free Tier VM（Docker Compose）
 - **Production URL**：https://galleon.chenlizhan.com
 - **Webhook URL**：https://galleon.chenlizhan.com/callback
-- **部署方式**：Push 到 `master` → GitHub Actions 執行 lint + build 檢查 → SSH 到 VM 部署
+- **Container Registry**：GHCR (`ghcr.io/chenlizhan/galleon`)
+- **部署方式**：Push 到 `master` → GitHub Actions lint + build Docker image → 推到 GHCR → SSH 到 VM pull + restart
 - **反向代理**：由 [gateway](../gateway) repo 的 Caddy 統一管理 HTTPS 與路由
 
 ## 環境變數
@@ -116,14 +117,15 @@ pnpm dev
 # 首次部署
 cp .env.example .env
 nano .env  # 填入實際環境變數
-docker compose build
+docker compose pull
 docker compose up -d
 
 # 更新部署（或透過 GitHub Actions 自動觸發）
-git pull origin master
-docker compose build
+docker compose pull
 docker compose up -d
 ```
+
+Docker image 由 GitHub Actions 建置並推送到 GHCR，VM 上不做 build（節省記憶體）。
 
 ### 本地直接執行
 
