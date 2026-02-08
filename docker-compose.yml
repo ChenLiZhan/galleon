@@ -6,7 +6,7 @@ services:
     env_file: .env
     environment:
       PORT: "3000"
-    mem_limit: 192m
+    mem_limit: 256m
     networks:
       - web
     healthcheck:
