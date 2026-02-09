@@ -39,11 +39,13 @@
 - pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate
 - Dockerfile uses multi-stage build: builder stage compiles TypeScript, production stage only has `dist/` + prod dependencies
 - Docker container runs as non-root user `nodejs` (UID 1001)
-- `docker-compose.yml` uses `image: ghcr.io/chenlizhan/galleon:latest` — VM 上不做 build（1GB RAM 不夠 build），image 由 GitHub Actions 建置推到 GHCR
+- `docker-compose.yml` uses `image: ghcr.io/chenlizhan/galleon:latest` — image 由 GitHub Actions 建置推到 GHCR
 - `docker-compose.yml` uses `env_file: .env` to load secrets — `.env` stays on the VM, never in CI/CD
 - Container name `galleon` is used as DNS hostname by gateway Caddy — do NOT rename without updating `gateway/Caddyfile`
 - Health check: `GET /health` returns `200 OK` — used by both Docker healthcheck and Caddy upstream
 - CI/CD (`.github/workflows/deploy.yml`): lint → build + push Docker image to GHCR → SSH to VM for `docker compose pull` + `docker compose up -d`
 - GitHub Actions Secrets needed: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (GHCR auth uses built-in `GITHUB_TOKEN`, no extra secret needed)
 - VM 首次部署需要先登入 GHCR: `echo <PAT> | docker login ghcr.io -u <username> --password-stdin`
+- CI/CD 使用 QEMU + buildx 產生 multi-arch image（amd64 + arm64），支援 x86 和 ARM VM
+- 換 VM 架構（x86 ↔ ARM）不需改 docker-compose.yml，CI 產生的 manifest 會自動匹配
 - VM path: `~/apps/galleon`
