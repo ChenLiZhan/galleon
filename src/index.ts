@@ -44,12 +44,20 @@ function extractCommandText(event: WebhookEvent): string | null {
   return commandText || null;
 }
 
+function getSourceId(event: WebhookEvent): string {
+  const src = event.source;
+  if (src.type === 'group') return src.groupId;
+  if (src.type === 'room') return src.roomId;
+  return src.userId;
+}
+
 async function handleEvent(event: WebhookEvent): Promise<unknown> {
   if (event.type !== 'message' || event.message.type !== 'text') return null;
 
   const commandText = extractCommandText(event);
   if (!commandText) return null;
 
+  const groupId = getSourceId(event);
   const parsed = parseCommand(commandText);
 
   let command: Command | null = null;
@@ -66,7 +74,7 @@ async function handleEvent(event: WebhookEvent): Promise<unknown> {
     replyText = '抱歉，無法理解指令。請輸入 help 查看指令格式。';
   } else {
     try {
-      replyText = await executeCommand(command);
+      replyText = await executeCommand(command, groupId);
     } catch (err) {
       console.error('Command execution error:', err);
       replyText = '系統錯誤，請稍後再試';

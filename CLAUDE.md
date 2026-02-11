@@ -42,9 +42,12 @@
 - `GOOGLE_PRIVATE_KEY` env var needs `.replace(/\\n/g, '\n')` — already handled in `src/config.ts`
 - LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text
 - Google Sheets API: `findRowIndex` must skip header row (slice(1)), row numbers are 1-based for API calls
-- Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:F`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
+- Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:G`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
 - Market detection: `detectMarket()` in `commands.ts` — pure digits=TW, letters=US, digits+`.T`=JP. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
 - Adding a field to `Holding`: update `types.ts` (interface), `sheets.ts` (HEADERS, ranges, row mapping, rowData), and all `upsertHolding()` call sites in `commands.ts`
+- Multi-group data isolation: `getSourceId()` in `index.ts` extracts source ID from LINE event (group=`groupId`, room=`roomId`, user=`userId`) — used as `group_id` (column G) in Google Sheets to separate holdings per group
+- `executeCommand(command, groupId)` requires `groupId` as second param — all handlers pass it to sheet functions (`getHoldings`, `upsertHolding`, `deleteHolding`, `findRowIndex`)
+- Adding a new column to Google Sheets: prefer appending as the LAST column to avoid shifting existing column indices and breaking row index mappings
 - pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate
 - Dockerfile uses multi-stage build: builder stage compiles TypeScript, production stage only has `dist/` + prod dependencies
 - Docker container runs as non-root user `nodejs` (UID 1001)
