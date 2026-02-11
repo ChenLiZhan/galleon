@@ -8,8 +8,6 @@ import {
 import express, { Request, Response, NextFunction } from 'express';
 import { config } from './config.js';
 import { parseCommand, executeCommand } from './commands.js';
-import { parseNaturalLanguage } from './llm.js';
-import type { Command } from './types.js';
 
 const client = new messagingApi.MessagingApiClient({
   channelAccessToken: config.channelAccessToken,
@@ -52,21 +50,12 @@ async function handleEvent(event: WebhookEvent): Promise<unknown> {
 
   const parsed = parseCommand(commandText);
 
-  let command: Command | null = null;
-
-  if (typeof parsed === 'string') {
-    console.log('[NLU] Trying LLM fallback for:', commandText);
-    command = await parseNaturalLanguage(commandText);
-  } else {
-    command = parsed;
-  }
-
   let replyText: string;
-  if (!command) {
-    replyText = '抱歉，無法理解指令。請輸入 help 查看指令格式。';
+  if (typeof parsed === 'string') {
+    replyText = parsed;
   } else {
     try {
-      replyText = await executeCommand(command);
+      replyText = await executeCommand(parsed);
     } catch (err) {
       console.error('Command execution error:', err);
       replyText = '系統錯誤，請稍後再試';

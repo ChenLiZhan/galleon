@@ -23,15 +23,8 @@
 - Environment variables managed via `dotenv/config` in `src/config.ts`
 - Never create or import unused library/const/object
 
-## LLM Integration
-- LLM inference via shared Ollama service at `http://ollama:11434` (separate `ollama` repo) — used as NLU fallback when `parseCommand()` fails
-- LLM module: `src/llm.ts` — `parseNaturalLanguage()` is the public API, returns `Command | null`
-- Ollama API: uses `/api/generate` with `stream: false`, model configured via `OLLAMA_MODEL` env var (default `qwen2.5:7b`)
-- NLU flow: `parseCommand()` → fails → `parseNaturalLanguage()` → `validateCommand()` runtime schema check → `executeCommand()` or fallback error
-- Optional env vars in `config.ts` use `process.env.X ?? 'default'` pattern (not `requireEnv()`), so missing Ollama config won't crash the bot
-- Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
-
 ## Gotchas
+- Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
 - Bot command format: `[user] [action] [args...]` (user comes FIRST, e.g., `lee buy 2330 10 500`, `lee sell 2330 10`, `lee hold`)
 - `buy` requires price (for avg price calc), `sell` does not — when changing command args, also update `README.md` and `handleHelp()` in `commands.ts`
 - Express error middleware MUST have exactly 4 params `(err, req, res, next)` — prefix unused with `_`
@@ -56,7 +49,4 @@
 - VM 首次部署需要先登入 GHCR: `echo <PAT> | docker login ghcr.io -u <username> --password-stdin`
 - CI/CD 使用 QEMU + buildx 產生 multi-arch image（amd64 + arm64），支援 x86 和 ARM VM
 - 換 VM 架構（x86 ↔ ARM）不需改 docker-compose.yml，CI 產生的 manifest 會自動匹配
-- Changing bot commands: also update the few-shot examples in `SYSTEM_PROMPT` in `src/llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
-- `validateCommand()` in `src/llm.ts` mirrors `parseCommand()` validation rules — if validation rules change in `commands.ts`, update `llm.ts` too
-- Ollama cold start: first request after model unload takes extra time (~10-30s) for model loading — 30s timeout configured in `generateCompletion()`
 - VM path: `~/apps/galleon`
