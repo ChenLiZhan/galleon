@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { config } from './config.js';
 import type { Holding } from './types.js';
 
-const HEADERS = ['user', 'stock_code', 'amount', 'avg_price', 'market', 'updated_at'];
+const HEADERS = ['user', 'stock_code', 'amount', 'avg_price', 'market', 'updated_at', 'group_id'];
 const SHEET_NAME = 'Holdings';
 
 const auth = new google.auth.JWT({
@@ -16,25 +16,25 @@ const sheets = google.sheets({ version: 'v4', auth });
 async function ensureHeaders(): Promise<void> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `${SHEET_NAME}!A1:F1`,
+    range: `${SHEET_NAME}!A1:G1`,
   });
 
   if (!res.data.values || res.data.values.length === 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A1:F1`,
+      range: `${SHEET_NAME}!A1:G1`,
       valueInputOption: 'RAW',
       requestBody: { values: [HEADERS] },
     });
   }
 }
 
-export async function getHoldings(user: string): Promise<Holding[]> {
+export async function getHoldings(user: string, groupId: string): Promise<Holding[]> {
   await ensureHeaders();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `${SHEET_NAME}!A:F`,
+    range: `${SHEET_NAME}!A:G`,
   });
 
   const rows = res.data.values;
@@ -42,8 +42,11 @@ export async function getHoldings(user: string): Promise<Holding[]> {
 
   return rows
     .slice(1)
-    .filter((row) => row.length >= 6 && row[0] === user && !isNaN(Number(row[2])))
+    .filter(
+      (row) => row.length >= 7 && row[0] === user && row[6] === groupId && !isNaN(Number(row[2])),
+    )
     .map((row) => ({
+      groupId: row[6],
       user: row[0],
       stockCode: row[1],
       amount: Number(row[2]),
@@ -53,23 +56,25 @@ export async function getHoldings(user: string): Promise<Holding[]> {
     }));
 }
 
-async function findRowIndex(user: string, stockCode: string): Promise<number> {
+async function findRowIndex(user: string, stockCode: string, groupId: string): Promise<number> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `${SHEET_NAME}!A:B`,
+    range: `${SHEET_NAME}!A:G`,
   });
 
   const rows = res.data.values;
   if (!rows || rows.length <= 1) return -1;
 
-  const dataIndex = rows.slice(1).findIndex((row) => row[0] === user && row[1] === stockCode);
+  const dataIndex = rows
+    .slice(1)
+    .findIndex((row) => row[0] === user && row[1] === stockCode && row[6] === groupId);
   return dataIndex === -1 ? -1 : dataIndex + 1;
 }
 
 export async function upsertHolding(holding: Holding): Promise<void> {
   await ensureHeaders();
 
-  const rowIndex = await findRowIndex(holding.user, holding.stockCode);
+  const rowIndex = await findRowIndex(holding.user, holding.stockCode, holding.groupId);
   const rowData = [
     holding.user,
     holding.stockCode,
@@ -77,12 +82,13 @@ export async function upsertHolding(holding: Holding): Promise<void> {
     holding.avgPrice,
     holding.market,
     holding.updatedAt,
+    holding.groupId,
   ];
 
   if (rowIndex === -1) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A:F`,
+      range: `${SHEET_NAME}!A:G`,
       valueInputOption: 'RAW',
       requestBody: { values: [rowData] },
     });
@@ -90,15 +96,19 @@ export async function upsertHolding(holding: Holding): Promise<void> {
     const row = rowIndex + 1;
     await sheets.spreadsheets.values.update({
       spreadsheetId: config.spreadsheetId,
-      range: `${SHEET_NAME}!A${row}:F${row}`,
+      range: `${SHEET_NAME}!A${row}:G${row}`,
       valueInputOption: 'RAW',
       requestBody: { values: [rowData] },
     });
   }
 }
 
-export async function deleteHolding(user: string, stockCode: string): Promise<void> {
-  const rowIndex = await findRowIndex(user, stockCode);
+export async function deleteHolding(
+  user: string,
+  stockCode: string,
+  groupId: string,
+): Promise<void> {
+  const rowIndex = await findRowIndex(user, stockCode, groupId);
   if (rowIndex === -1) return;
 
   const spreadsheet = await sheets.spreadsheets.get({

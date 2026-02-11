@@ -1,6 +1,7 @@
 export type Market = 'TW' | 'US' | 'JP';
 
 export interface Holding {
+  groupId: string;
   user: string;
   stockCode: string;
   amount: number;

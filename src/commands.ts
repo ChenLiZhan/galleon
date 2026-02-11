@@ -66,21 +66,21 @@ export function parseCommand(text: string): Command | string {
   return `未知指令「${action}」，可用指令：buy、sell、hold、help`;
 }
 
-export async function executeCommand(command: Command): Promise<string> {
+export async function executeCommand(command: Command, groupId: string): Promise<string> {
   switch (command.type) {
     case 'buy':
-      return handleBuy(command);
+      return handleBuy(command, groupId);
     case 'sell':
-      return handleSell(command);
+      return handleSell(command, groupId);
     case 'hold':
-      return handleHold(command.user);
+      return handleHold(command.user, groupId);
     case 'help':
       return handleHelp();
   }
 }
 
-async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
-  const holdings = await getHoldings(cmd.user);
+async function handleBuy(cmd: Command & { type: 'buy' }, groupId: string): Promise<string> {
+  const holdings = await getHoldings(cmd.user, groupId);
   const existing = holdings.find((h) => h.stockCode === cmd.stockCode);
 
   const now = new Date().toISOString().slice(0, 10);
@@ -91,6 +91,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
     const newAvgPrice = Math.round((totalCost / totalAmount) * 100) / 100;
 
     await upsertHolding({
+      groupId,
       user: cmd.user,
       stockCode: cmd.stockCode,
       amount: totalAmount,
@@ -107,6 +108,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
   }
 
   await upsertHolding({
+    groupId,
     user: cmd.user,
     stockCode: cmd.stockCode,
     amount: cmd.amount,
@@ -122,8 +124,8 @@ async function handleBuy(cmd: Command & { type: 'buy' }): Promise<string> {
   );
 }
 
-async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
-  const holdings = await getHoldings(cmd.user);
+async function handleSell(cmd: Command & { type: 'sell' }, groupId: string): Promise<string> {
+  const holdings = await getHoldings(cmd.user, groupId);
   const existing = holdings.find((h) => h.stockCode === cmd.stockCode);
 
   if (!existing) {
@@ -138,11 +140,12 @@ async function handleSell(cmd: Command & { type: 'sell' }): Promise<string> {
   const now = new Date().toISOString().slice(0, 10);
 
   if (remainingAmount === 0) {
-    await deleteHolding(cmd.user, cmd.stockCode);
+    await deleteHolding(cmd.user, cmd.stockCode, groupId);
     return `成功！\n${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n已全部賣出`;
   }
 
   await upsertHolding({
+    groupId,
     user: cmd.user,
     stockCode: cmd.stockCode,
     amount: remainingAmount,
@@ -166,8 +169,8 @@ const MARKET_HEADERS: Record<Market, string> = {
 
 const MARKET_ORDER: Market[] = ['TW', 'US', 'JP'];
 
-async function handleHold(user: string): Promise<string> {
-  const holdings = await getHoldings(user);
+async function handleHold(user: string, groupId: string): Promise<string> {
+  const holdings = await getHoldings(user, groupId);
 
   if (holdings.length === 0) {
     return `${user} 目前沒有持股`;
