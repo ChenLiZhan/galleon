@@ -15,4 +15,6 @@ export const config = {
   googleServiceAccountEmail: requireEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
   googlePrivateKey: requireEnv('GOOGLE_PRIVATE_KEY').replace(/\\n/g, '\n'),
   spreadsheetId: requireEnv('SPREADSHEET_ID'),
+  ollamaUrl: process.env.OLLAMA_URL ?? 'http://ollama:11434',
+  ollamaModel: process.env.OLLAMA_MODEL ?? 'qwen2.5:7b',
 };

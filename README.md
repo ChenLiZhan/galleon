@@ -69,6 +69,17 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 
 範例：`@Bot help`
 
+### 自然語言理解（NLU Fallback）
+
+除了上述結構化指令外，Bot 也支援自然語言輸入。當結構化指令解析失敗時，會自動透過 Ollama LLM 嘗試理解指令意圖。
+
+範例：
+- `@Bot lee 買 2330 10股 500元` → 自動解析為 buy 指令
+- `@Bot 幫 lee 買入 AAPL 5股 每股150` → 自動解析為 buy 指令
+- `@Bot lee 的持股` → 自動解析為 hold 指令
+
+需要 Ollama 服務運行於同一 Docker 網路中。
+
 ## Tech Stack
 
 | 類別 | 技術 |
@@ -101,6 +112,8 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 | `GOOGLE_PRIVATE_KEY` | Google 服務帳號私鑰 |
 | `SPREADSHEET_ID` | Google Sheets 文件 ID |
 | `PORT` | 伺服器埠號（預設 3000） |
+| `OLLAMA_URL` | Ollama 服務 URL（預設 `http://ollama:11434`） |
+| `OLLAMA_MODEL` | Ollama 模型名稱（預設 `qwen2.5:7b`） |
 
 ## 開發
 
