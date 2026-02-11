@@ -32,6 +32,7 @@
 - Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
 
 ## Gotchas
+- Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
 - Bot command format: `[user] [action] [args...]` (user comes FIRST, e.g., `lee buy 2330 10 500`, `lee sell 2330 10`, `lee hold`)
 - `buy` requires price (for avg price calc), `sell` does not — when changing command args, also update `README.md` and `handleHelp()` in `commands.ts`
 - Express error middleware MUST have exactly 4 params `(err, req, res, next)` — prefix unused with `_`

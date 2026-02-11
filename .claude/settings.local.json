@@ -18,7 +18,17 @@
       "WebFetch(domain:www.alphavantage.co)",
       "WebFetch(domain:openapi.twse.com.tw)",
       "WebFetch(domain:finnhub.io)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:console.groq.com)",
+      "Bash(docker network ls:*)",
+      "Bash(git -C /home/chenlizhan/apps/galleon status)",
+      "Bash(git -C /home/chenlizhan/apps/Gateway status)",
+      "Bash(git -C /home/chenlizhan/apps/ollama status)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
