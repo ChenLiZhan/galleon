@@ -1,6 +1,7 @@
 import {
   messagingApi,
   middleware,
+  webhook,
   SignatureValidationFailed,
   JSONParseError,
   WebhookEvent,
@@ -37,9 +38,13 @@ function extractCommandText(event: WebhookEvent): string | null {
 
   if (!mention?.mentionees?.length) return null;
 
-  const firstMention = mention.mentionees[0];
-  const mentionText = text.slice(0, firstMention.index + firstMention.length);
-  const commandText = text.slice(mentionText.length).trim();
+  const botMention = mention.mentionees.find(
+    (m): m is webhook.UserMentionee =>
+      m.type === 'user' && (m as webhook.UserMentionee).isSelf === true,
+  );
+  if (!botMention) return null;
+
+  const commandText = text.slice(botMention.index + botMention.length).trim();
 
   return commandText || null;
 }

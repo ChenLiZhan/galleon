@@ -40,7 +40,8 @@
 - `eslint-plugin-prettier/recommended` already includes `eslint-config-prettier`, don't add both
 - `google.auth.JWT` uses options object `{ email, key, scopes }`, NOT positional args
 - `GOOGLE_PRIVATE_KEY` env var needs `.replace(/\\n/g, '\n')` — already handled in `src/config.ts`
-- LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text
+- LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text — MUST check `isSelf === true` to ensure bot is the target (not just any @mention)
+- LINE SDK `Mentionee` type narrowing: `MentioneeBase.type` is `string` (not literal), so `m.type === 'user'` won't auto-narrow — use `(m as webhook.UserMentionee).isSelf` with a type predicate
 - Google Sheets API: `findRowIndex` must skip header row (slice(1)), row numbers are 1-based for API calls
 - Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:G`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
 - Market detection: `detectMarket()` in `commands.ts` — pure digits=TW, letters=US, digits+`.T`=JP. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
