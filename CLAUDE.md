@@ -64,6 +64,13 @@
 - CI/CD 使用 QEMU + buildx 產生 multi-arch image（amd64 + arm64），支援 x86 和 ARM VM
 - 換 VM 架構（x86 ↔ ARM）不需改 docker-compose.yml，CI 產生的 manifest 會自動匹配
 - Changing bot commands: also update the few-shot examples in `SYSTEM_PROMPT` in `src/llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
+- Adding a new Command type: update `Command` union in `types.ts`, `parseCommand()` detection in `commands.ts`, `executeCommand()` switch + handler in `commands.ts`, `SYSTEM_PROMPT` few-shot examples in `llm.ts`, `validateCommand()` in `llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
+- Not all commands need `groupId`/`user` — stateless commands like `quote` and `help` can ignore the `groupId` param in `executeCommand()`
+- Stock quote feature: `src/twse.ts` calls TWSE MIS API (`mis.twse.com.tw/stock/api/getStockInfo.jsp`) — no API key needed, but has implicit rate limit (~3 req/5s). Request headers need `Referer: https://mis.twse.com.tw/stock/`
+- TWSE API: response field `z` (current price) is `"-"` during non-trading hours — always use `parseNumber()` (not `Number()`) to avoid NaN propagation. `previousClose` (`y` field) can also be `"-"`
+- TWSE API: stock codes don't distinguish listed (上市 tse) vs OTC (上櫃 otc) — `fetchTwseQuote()` queries both in parallel via `Promise.allSettled`, prefers tse result
+- Quote command detection: `/^\d{4,6}$/` in `parseCommand()` — single token of 4-6 digits triggers quote. This runs BEFORE user/action parsing, so won't conflict with `[user] [action]` commands
+- Extending quote to US/JP stocks: add new API module (e.g., `src/yahoo.ts`), update `parseCommand()` pattern, `validateCommand()` regex, `SYSTEM_PROMPT`, and `handleQuote()` to dispatch by `detectMarket()`
 - `validateCommand()` in `src/llm.ts` mirrors `parseCommand()` validation rules — if validation rules change in `commands.ts`, update `llm.ts` too
 - Ollama cold start: first request after model unload takes extra time (~10-30s) for model loading — 30s timeout configured in `generateCompletion()`
 - VM path: `~/apps/galleon`

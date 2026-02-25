@@ -7,7 +7,8 @@ const SYSTEM_PROMPT = `你是股票指令解析器。將使用者的自然語言
 1. buy - {"type":"buy","user":"名稱","stockCode":"代號","amount":數量,"price":價格}
 2. sell - {"type":"sell","user":"名稱","stockCode":"代號","amount":數量}
 3. hold - {"type":"hold","user":"名稱"}
-4. help - {"type":"help"}
+4. quote - {"type":"quote","stockCode":"代號"}（查詢股票即時報價，stockCode 為台股純數字代號）
+5. help - {"type":"help"}
 
 股票代號規則：純數字(2330)=台股、英文(AAPL)=美股、數字.T(7203.T)=日股
 
@@ -16,6 +17,8 @@ const SYSTEM_PROMPT = `你是股票指令解析器。將使用者的自然語言
 「幫 john 買入 AAPL 5股 每股150」→ {"type":"buy","user":"john","stockCode":"AAPL","amount":5,"price":150}
 「alice 賣掉 2330 20股」→ {"type":"sell","user":"alice","stockCode":"2330","amount":20}
 「bob 的持股」→ {"type":"hold","user":"bob"}
+「查 2330」→ {"type":"quote","stockCode":"2330"}
+「台積電股價」→ {"type":"quote","stockCode":"2330"}
 「說明」→ {"type":"help"}
 
 只回傳 JSON，不要任何解釋。無法解析則回傳 {"type":"error"}。`;
@@ -109,6 +112,14 @@ function validateCommand(obj: unknown): Command | null {
 
   if (cmd.type === 'hold' && typeof cmd.user === 'string' && cmd.user.trim() !== '') {
     return { type: 'hold', user: cmd.user.trim() };
+  }
+
+  if (
+    cmd.type === 'quote' &&
+    typeof cmd.stockCode === 'string' &&
+    /^\d{4,6}$/.test(cmd.stockCode.trim())
+  ) {
+    return { type: 'quote', stockCode: cmd.stockCode.trim() };
   }
 
   return null;

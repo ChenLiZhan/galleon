@@ -1,5 +1,6 @@
 import { getHoldings, upsertHolding, deleteHolding } from './sheets.js';
-import type { Command, Holding, Market } from './types.js';
+import { fetchTwseQuote } from './twse.js';
+import type { Command, Holding, Market, TwseQuote } from './types.js';
 
 function detectMarket(stockCode: string): Market {
   if (/^\d+\.T$/i.test(stockCode)) return 'JP';
@@ -12,6 +13,11 @@ export function parseCommand(text: string): Command | string {
 
   if (parts[0]?.toLowerCase() === 'help') {
     return { type: 'help' };
+  }
+
+  // Single token matching TW stock code pattern → quote command
+  if (parts.length === 1 && /^\d{4,6}$/.test(parts[0])) {
+    return { type: 'quote', stockCode: parts[0] };
   }
 
   const user = parts[0];
@@ -74,6 +80,8 @@ export async function executeCommand(command: Command, groupId: string): Promise
       return handleSell(command, groupId);
     case 'hold':
       return handleHold(command.user, groupId);
+    case 'quote':
+      return handleQuote(command.stockCode);
     case 'help':
       return handleHelp();
   }
@@ -196,6 +204,34 @@ async function handleHold(user: string, groupId: string): Promise<string> {
   return `${canonicalUser} 的持股：\n\n${sections.join('\n\n')}`;
 }
 
+function formatQuote(quote: TwseQuote): string {
+  const price = quote.price ?? quote.previousClose;
+  const diff = quote.price != null ? quote.price - quote.previousClose : 0;
+  const diffPercent =
+    quote.previousClose > 0 ? ((diff / quote.previousClose) * 100).toFixed(2) : '0.00';
+  const sign = diff > 0 ? '+' : '';
+  const arrow = diff > 0 ? '🔺' : diff < 0 ? '🔻' : '➖';
+
+  const lines = [
+    `${quote.name}（${quote.code}）`,
+    `${arrow} ${price} ${sign}${diff.toFixed(2)}（${sign}${diffPercent}%）`,
+  ];
+
+  if (quote.price == null) {
+    lines.push('⏸ 目前非交易時間，顯示昨收價');
+  }
+
+  return lines.join('\n');
+}
+
+async function handleQuote(stockCode: string): Promise<string> {
+  const quote = await fetchTwseQuote(stockCode);
+  if (!quote) {
+    return `找不到股票代號 ${stockCode}，請確認是否為有效的台股代號`;
+  }
+  return formatQuote(quote);
+}
+
 function handleHelp(): string {
   return [
     '📋 可用指令一覽',
@@ -211,6 +247,10 @@ function handleHelp(): string {
     '▸ hold — 查詢持股（依市場分類）',
     '  格式：[user] hold',
     '  範例：lee hold',
+    '',
+    '▸ [股票代號] — 查詢台股即時報價',
+    '  格式：[股票代號]',
+    '  範例：2330',
     '',
     '▸ help — 顯示此說明',
     '  格式：help',
