@@ -69,6 +69,7 @@
 - Stock quote feature: `src/twse.ts` calls TWSE MIS API (`mis.twse.com.tw/stock/api/getStockInfo.jsp`) — no API key needed, but has implicit rate limit (~3 req/5s). Request headers need `Referer: https://mis.twse.com.tw/stock/`
 - TWSE API: response field `z` (current price) is `"-"` during non-trading hours — always use `parseNumber()` (not `Number()`) to avoid NaN propagation. `previousClose` (`y` field) can also be `"-"`
 - TWSE API: stock codes don't distinguish listed (上市 tse) vs OTC (上櫃 otc) — `fetchTwseQuote()` queries both in parallel via `Promise.allSettled`, prefers tse result
+- TWSE API: invalid stock codes still return `rtcode: '0000'` with non-empty `msgArray` but empty field values — must validate `stock.n` (name) is non-empty in `fetchFromExchange()` to detect non-existent stocks
 - Quote command detection: `/^\d{4,6}$/` in `parseCommand()` — single token of 4-6 digits triggers quote. This runs BEFORE user/action parsing, so won't conflict with `[user] [action]` commands
 - Extending quote to US/JP stocks: add new API module (e.g., `src/yahoo.ts`), update `parseCommand()` pattern, `validateCommand()` regex, `SYSTEM_PROMPT`, and `handleQuote()` to dispatch by `detectMarket()`
 - `validateCommand()` in `src/llm.ts` mirrors `parseCommand()` validation rules — if validation rules change in `commands.ts`, update `llm.ts` too

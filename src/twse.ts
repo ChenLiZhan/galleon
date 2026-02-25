@@ -49,7 +49,10 @@ async function fetchFromExchange(
     const data = (await res.json()) as TwseResponse;
     if (data.rtcode !== '0000' || !data.msgArray?.length) return null;
 
-    return data.msgArray[0];
+    const stock = data.msgArray[0];
+    if (!stock.n?.trim()) return null;
+
+    return stock;
   } catch {
     return null;
   } finally {
