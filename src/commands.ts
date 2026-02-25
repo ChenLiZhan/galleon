@@ -92,7 +92,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }, groupId: string): Promi
 
     await upsertHolding({
       groupId,
-      user: cmd.user,
+      user: existing.user,
       stockCode: cmd.stockCode,
       amount: totalAmount,
       avgPrice: newAvgPrice,
@@ -102,7 +102,7 @@ async function handleBuy(cmd: Command & { type: 'buy' }, groupId: string): Promi
 
     return (
       `成功！\n` +
-      `${cmd.user} 買入 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
+      `${existing.user} 買入 ${cmd.stockCode} ${cmd.amount}股 @${cmd.price}\n` +
       `持有：${totalAmount}股，均價：${newAvgPrice}`
     );
   }
@@ -133,20 +133,20 @@ async function handleSell(cmd: Command & { type: 'sell' }, groupId: string): Pro
   }
 
   if (cmd.amount > existing.amount) {
-    return `賣出失敗！${cmd.user} 只持有 ${cmd.stockCode} ${existing.amount}股，無法賣出 ${cmd.amount}股`;
+    return `賣出失敗！${existing.user} 只持有 ${cmd.stockCode} ${existing.amount}股，無法賣出 ${cmd.amount}股`;
   }
 
   const remainingAmount = existing.amount - cmd.amount;
   const now = new Date().toISOString().slice(0, 10);
 
   if (remainingAmount === 0) {
-    await deleteHolding(cmd.user, cmd.stockCode, groupId);
-    return `成功！\n${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n已全部賣出`;
+    await deleteHolding(existing.user, cmd.stockCode, groupId);
+    return `成功！\n${existing.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n已全部賣出`;
   }
 
   await upsertHolding({
     groupId,
-    user: cmd.user,
+    user: existing.user,
     stockCode: cmd.stockCode,
     amount: remainingAmount,
     avgPrice: existing.avgPrice,
@@ -156,7 +156,7 @@ async function handleSell(cmd: Command & { type: 'sell' }, groupId: string): Pro
 
   return (
     `成功！\n` +
-    `${cmd.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n` +
+    `${existing.user} 賣出 ${cmd.stockCode} ${cmd.amount}股\n` +
     `剩餘：${remainingAmount}股，均價：${existing.avgPrice}`
   );
 }
@@ -176,6 +176,8 @@ async function handleHold(user: string, groupId: string): Promise<string> {
     return `${user} 目前沒有持股`;
   }
 
+  const canonicalUser = holdings[0].user;
+
   const byMarket = new Map<Market, Holding[]>();
   for (const h of holdings) {
     const group = byMarket.get(h.market) ?? [];
@@ -191,7 +193,7 @@ async function handleHold(user: string, groupId: string): Promise<string> {
     sections.push(`${MARKET_HEADERS[market]}\n${lines.join('\n')}`);
   }
 
-  return `${user} 的持股：\n\n${sections.join('\n\n')}`;
+  return `${canonicalUser} 的持股：\n\n${sections.join('\n\n')}`;
 }
 
 function handleHelp(): string {

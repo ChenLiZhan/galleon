@@ -43,6 +43,8 @@
 - LINE SDK v10 mention detection: use `mention.mentionees[].index` + `length` to strip @mention text — MUST check `isSelf === true` to ensure bot is the target (not just any @mention)
 - LINE SDK `Mentionee` type narrowing: `MentioneeBase.type` is `string` (not literal), so `m.type === 'user'` won't auto-narrow — use `(m as webhook.UserMentionee).isSelf` with a type predicate
 - Google Sheets API: `findRowIndex` must skip header row (slice(1)), row numbers are 1-based for API calls
+- Google Sheets API: `findRowIndex` and `getHoldings` filter must both include `row.length >= 7` guard — Sheets API omits trailing empty cells, so short rows cause `undefined` access
+- User name matching is case-insensitive (`.toLowerCase()` comparison in `sheets.ts`) — but Sheets stores the original case from first entry (canonical name). When updating existing records in `commands.ts`, use `existing.user` (from Sheets) not `cmd.user` (from input)
 - Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:G`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
 - Market detection: `detectMarket()` in `commands.ts` — pure digits=TW, letters=US, digits+`.T`=JP. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
 - Adding a field to `Holding`: update `types.ts` (interface), `sheets.ts` (HEADERS, ranges, row mapping, rowData), and all `upsertHolding()` call sites in `commands.ts`

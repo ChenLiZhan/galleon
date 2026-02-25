@@ -43,7 +43,11 @@ export async function getHoldings(user: string, groupId: string): Promise<Holdin
   return rows
     .slice(1)
     .filter(
-      (row) => row.length >= 7 && row[0] === user && row[6] === groupId && !isNaN(Number(row[2])),
+      (row) =>
+        row.length >= 7 &&
+        row[0].toLowerCase() === user.toLowerCase() &&
+        row[6] === groupId &&
+        !isNaN(Number(row[2])),
     )
     .map((row) => ({
       groupId: row[6],
@@ -67,7 +71,13 @@ async function findRowIndex(user: string, stockCode: string, groupId: string): P
 
   const dataIndex = rows
     .slice(1)
-    .findIndex((row) => row[0] === user && row[1] === stockCode && row[6] === groupId);
+    .findIndex(
+      (row) =>
+        row.length >= 7 &&
+        row[0].toLowerCase() === user.toLowerCase() &&
+        row[1] === stockCode &&
+        row[6] === groupId,
+    );
   return dataIndex === -1 ? -1 : dataIndex + 1;
 }
 
