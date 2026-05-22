@@ -65,7 +65,7 @@
 - VM 首次部署需要先登入 GHCR: `echo <PAT> | docker login ghcr.io -u <username> --password-stdin`
 - CI/CD 使用 QEMU + buildx 產生 multi-arch image（amd64 + arm64），支援 x86 和 ARM VM
 - 換 VM 架構（x86 ↔ ARM）不需改 docker-compose.yml，CI 產生的 manifest 會自動匹配
-- Changing bot commands: also update the few-shot examples in `SYSTEM_PROMPT` in `src/llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
+- Changing bot command **syntax/parsing** (args, new command type): also update few-shot examples in `SYSTEM_PROMPT` in `src/llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`. Changing only **output rendering** (line format, sort order, added fields in reply text) doesn't require those — SYSTEM_PROMPT is input-only, handleHelp describes command syntax not output, README descriptions are high-level
 - Adding a new Command type: update `Command` union in `types.ts`, `parseCommand()` detection in `commands.ts`, `executeCommand()` switch + handler in `commands.ts`, `SYSTEM_PROMPT` few-shot examples in `llm.ts`, `validateCommand()` in `llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
 - Not all commands need `groupId`/`user` — stateless commands like `quote` and `help` can ignore the `groupId` param in `executeCommand()`
 - Stock quote feature: `src/twse.ts` calls TWSE MIS API (`mis.twse.com.tw/stock/api/getStockInfo.jsp`) — no API key needed, but has implicit rate limit (~3 req/5s). Request headers need `Referer: https://mis.twse.com.tw/stock/`

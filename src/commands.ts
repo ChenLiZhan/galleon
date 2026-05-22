@@ -186,6 +186,7 @@ async function handleHold(user: string, groupId: string): Promise<string> {
   }
 
   const canonicalUser = holdings[0].user;
+  const totalCost = holdings.reduce((sum, h) => sum + h.amount * h.avgPrice, 0);
 
   const byMarket = new Map<Market, Holding[]>();
   for (const h of holdings) {
@@ -198,7 +199,11 @@ async function handleHold(user: string, groupId: string): Promise<string> {
   for (const market of MARKET_ORDER) {
     const group = byMarket.get(market);
     if (!group) continue;
-    const lines = group.map((h) => `  ${h.stockCode}：${h.amount}股，均價 ${h.avgPrice}`);
+    const sorted = [...group].sort((a, b) => b.amount * b.avgPrice - a.amount * a.avgPrice);
+    const lines = sorted.map((h) => {
+      const pct = ((h.amount * h.avgPrice) / totalCost) * 100;
+      return `  ${h.stockCode}：${h.amount}股，均價 ${h.avgPrice} (${pct.toFixed(1)}%)`;
+    });
     sections.push(`${MARKET_HEADERS[market]}\n${lines.join('\n')}`);
   }
 
