@@ -15,6 +15,7 @@
 - `pnpm build` - TypeScript 編譯到 dist/
 - `pnpm lint:fix` - ESLint 自動修正 (含 Prettier formatting)
 - `pnpm format` - Prettier 格式化
+- 沒有單元測試 — pure-function / regex 邏輯改動可用 `node -e "..."` 跑 ad-hoc 比對表 sanity check（例：用一組案例陣列檢驗 `detectMarket()` 與 quote regex 的輸出）
 
 ## Code Conventions
 - Single quotes, semicolons, trailing commas, 100 char print width
@@ -22,6 +23,7 @@
 - ESM imports require `.js` extension for local modules (e.g., `./config.js`)
 - Environment variables managed via `dotenv/config` in `src/config.ts`
 - Never create or import unused library/const/object
+- Input normalization (uppercase, suffix stripping, etc.) belongs in handler functions before external API calls (e.g., `handleQuote()`), NOT in `parseCommand()` — `Command` objects should faithfully represent user input
 
 ## LLM Integration
 - LLM inference via shared Ollama service at `http://ollama:11434` (separate `ollama` repo) — used as NLU fallback when `parseCommand()` fails
@@ -46,7 +48,7 @@
 - Google Sheets API: `findRowIndex` and `getHoldings` filter must both include `row.length >= 7` guard — Sheets API omits trailing empty cells, so short rows cause `undefined` access
 - User name matching is case-insensitive (`.toLowerCase()` comparison in `sheets.ts`) — but Sheets stores the original case from first entry (canonical name). When updating existing records in `commands.ts`, use `existing.user` (from Sheets) not `cmd.user` (from input)
 - Google Sheets schema change checklist: update `HEADERS` array, all API range strings (e.g., `A:G`), `ensureHeaders()` range, `getHoldings()` filter/map (row indices), `upsertHolding()` rowData array and update range — all in `sheets.ts`
-- Market detection: `detectMarket()` in `commands.ts` — pure digits or digits+`.TW`=TW, letters=US, digits+`.T`=JP. stockCode with suffix (e.g., `7203.T`) is stored as-is in Sheets; only stripped when calling external APIs (e.g., `handleQuote()` strips `.TW` before calling TWSE). Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
+- Market detection: `detectMarket()` in `commands.ts` — pure digits or digits + single letter suffix (e.g., `00981A` 主動式 ETF、`00631L` 槓桿型、`00632R` 反向型)=TW, letters=US, digits+`.T`=JP. stockCode with `.T` suffix is stored as-is in Sheets; TW ETF codes with letter suffix are uppercased in `handleQuote()` before calling TWSE. Adding a new market requires updating `Market` type, `detectMarket()`, `MARKET_HEADERS`, and `MARKET_ORDER`
 - Adding a field to `Holding`: update `types.ts` (interface), `sheets.ts` (HEADERS, ranges, row mapping, rowData), and all `upsertHolding()` call sites in `commands.ts`
 - Multi-group data isolation: `getSourceId()` in `index.ts` extracts source ID from LINE event (group=`groupId`, room=`roomId`, user=`userId`) — used as `group_id` (column G) in Google Sheets to separate holdings per group
 - `executeCommand(command, groupId)` requires `groupId` as second param — all handlers pass it to sheet functions (`getHoldings`, `upsertHolding`, `deleteHolding`, `findRowIndex`)
@@ -70,7 +72,7 @@
 - TWSE API: response field `z` (current price) is `"-"` during non-trading hours — always use `parseNumber()` (not `Number()`) to avoid NaN propagation. `previousClose` (`y` field) can also be `"-"`
 - TWSE API: stock codes don't distinguish listed (上市 tse) vs OTC (上櫃 otc) — `fetchTwseQuote()` queries both in parallel via `Promise.allSettled`, prefers tse result
 - TWSE API: invalid stock codes still return `rtcode: '0000'` with non-empty `msgArray` but empty field values — must validate `stock.n` (name) is non-empty in `fetchFromExchange()` to detect non-existent stocks
-- Quote command detection: `/^\d{4,6}(\.TW)?$/i` in `parseCommand()` — single token of 4-6 digits (optionally with `.TW` suffix) triggers quote. This runs BEFORE user/action parsing, so won't conflict with `[user] [action]` commands
+- Quote command detection: `/^\d{4,6}[A-Z]?$/i` in `parseCommand()` — single token of 4-6 digits (optionally followed by a single letter for ETF codes like `00981A`) triggers quote. This runs BEFORE user/action parsing, so won't conflict with `[user] [action]` commands
 - Extending quote to US/JP stocks: add new API module (e.g., `src/yahoo.ts`), update `parseCommand()` pattern, `validateCommand()` regex, `SYSTEM_PROMPT`, and `handleQuote()` to dispatch by `detectMarket()`
 - `validateCommand()` in `src/llm.ts` mirrors `parseCommand()` validation rules — if validation rules change in `commands.ts`, update `llm.ts` too
 - Ollama cold start: first request after model unload takes extra time (~10-30s) for model loading — 30s timeout configured in `generateCompletion()`

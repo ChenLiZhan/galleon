@@ -7,10 +7,10 @@ const SYSTEM_PROMPT = `你是股票指令解析器。將使用者的自然語言
 1. buy - {"type":"buy","user":"名稱","stockCode":"代號","amount":數量,"price":價格}
 2. sell - {"type":"sell","user":"名稱","stockCode":"代號","amount":數量}
 3. hold - {"type":"hold","user":"名稱"}
-4. quote - {"type":"quote","stockCode":"代號"}（查詢股票即時報價，stockCode 為台股純數字代號）
+4. quote - {"type":"quote","stockCode":"代號"}（查詢股票即時報價，stockCode 為台股代號）
 5. help - {"type":"help"}
 
-股票代號規則：純數字(2330)或數字.TW(2330.TW)=台股、英文(AAPL)=美股、數字.T(7203.T)=日股
+股票代號規則：純數字(2330)或數字+字母(00981A)=台股、英文(AAPL)=美股、數字.T(7203.T)=日股
 
 範例：
 「lee 買 2330 10股 500元」→ {"type":"buy","user":"lee","stockCode":"2330","amount":10,"price":500}
@@ -18,6 +18,7 @@ const SYSTEM_PROMPT = `你是股票指令解析器。將使用者的自然語言
 「alice 賣掉 2330 20股」→ {"type":"sell","user":"alice","stockCode":"2330","amount":20}
 「bob 的持股」→ {"type":"hold","user":"bob"}
 「查 2330」→ {"type":"quote","stockCode":"2330"}
+「查 00981A」→ {"type":"quote","stockCode":"00981A"}
 「台積電股價」→ {"type":"quote","stockCode":"2330"}
 「說明」→ {"type":"help"}
 
@@ -117,7 +118,7 @@ function validateCommand(obj: unknown): Command | null {
   if (
     cmd.type === 'quote' &&
     typeof cmd.stockCode === 'string' &&
-    /^\d{4,6}(\.TW)?$/i.test(cmd.stockCode.trim())
+    /^\d{4,6}[A-Z]?$/i.test(cmd.stockCode.trim())
   ) {
     return { type: 'quote', stockCode: cmd.stockCode.trim() };
   }
