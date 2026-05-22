@@ -3,8 +3,9 @@ import { fetchTwseQuote } from './twse.js';
 import type { Command, Holding, Market, TwseQuote } from './types.js';
 
 function detectMarket(stockCode: string): Market {
-  if (/^\d+\.T$/i.test(stockCode)) return 'JP';
-  if (/^\d+$/.test(stockCode)) return 'TW';
+  const upper = stockCode.toUpperCase();
+  if (/^\d+\.T$/.test(upper)) return 'JP';
+  if (/^\d+(?:\.TW)?$/.test(upper)) return 'TW';
   return 'US';
 }
 
@@ -16,7 +17,7 @@ export function parseCommand(text: string): Command | string {
   }
 
   // Single token matching TW stock code pattern → quote command
-  if (parts.length === 1 && /^\d{4,6}$/.test(parts[0])) {
+  if (parts.length === 1 && /^\d{4,6}(\.TW)?$/i.test(parts[0])) {
     return { type: 'quote', stockCode: parts[0] };
   }
 
@@ -225,9 +226,10 @@ function formatQuote(quote: TwseQuote): string {
 }
 
 async function handleQuote(stockCode: string): Promise<string> {
-  const quote = await fetchTwseQuote(stockCode);
+  const code = stockCode.toUpperCase().replace(/\.TW$/, '');
+  const quote = await fetchTwseQuote(code);
   if (!quote) {
-    return `找不到股票代號 ${stockCode}，請確認是否為有效的台股代號`;
+    return `找不到股票代號 ${code}，請確認是否為有效的台股代號`;
   }
   return formatQuote(quote);
 }
@@ -257,6 +259,7 @@ function handleHelp(): string {
     '',
     '📌 股票代號與市場判斷',
     '  純數字（2330）→ 🇹🇼 台股',
+    '  數字.TW（2330.TW）→ 🇹🇼 台股（明確指定）',
     '  英文（AAPL）→ 🇺🇸 美股',
     '  數字.T（7203.T）→ 🇯🇵 日股',
   ].join('\n');

@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = `你是股票指令解析器。將使用者的自然語言
 4. quote - {"type":"quote","stockCode":"代號"}（查詢股票即時報價，stockCode 為台股純數字代號）
 5. help - {"type":"help"}
 
-股票代號規則：純數字(2330)=台股、英文(AAPL)=美股、數字.T(7203.T)=日股
+股票代號規則：純數字(2330)或數字.TW(2330.TW)=台股、英文(AAPL)=美股、數字.T(7203.T)=日股
 
 範例：
 「lee 買 2330 10股 500元」→ {"type":"buy","user":"lee","stockCode":"2330","amount":10,"price":500}
@@ -117,7 +117,7 @@ function validateCommand(obj: unknown): Command | null {
   if (
     cmd.type === 'quote' &&
     typeof cmd.stockCode === 'string' &&
-    /^\d{4,6}$/.test(cmd.stockCode.trim())
+    /^\d{4,6}(\.TW)?$/i.test(cmd.stockCode.trim())
   ) {
     return { type: 'quote', stockCode: cmd.stockCode.trim() };
   }
