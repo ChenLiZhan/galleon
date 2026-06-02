@@ -56,6 +56,23 @@ function getSourceId(event: WebhookEvent): string {
   return src.userId;
 }
 
+function isRetriableNetworkError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null || !('code' in err)) return false;
+  const code = (err as { code: unknown }).code;
+  return code === 'ETIMEDOUT' || code === 'ENOTFOUND' || code === 'EAI_AGAIN';
+}
+
+async function executeWithRetry(command: Command, groupId: string): Promise<string> {
+  try {
+    return await executeCommand(command, groupId);
+  } catch (err) {
+    if (!isRetriableNetworkError(err)) throw err;
+    console.warn('Network error, retrying once:', (err as { code: string }).code);
+    await new Promise((r) => setTimeout(r, 2000));
+    return executeCommand(command, groupId);
+  }
+}
+
 async function handleEvent(event: WebhookEvent): Promise<unknown> {
   if (event.type !== 'message' || event.message.type !== 'text') return null;
 
@@ -79,10 +96,12 @@ async function handleEvent(event: WebhookEvent): Promise<unknown> {
     replyText = '抱歉，無法理解指令。請輸入 help 查看指令格式。';
   } else {
     try {
-      replyText = await executeCommand(command, groupId);
+      replyText = await executeWithRetry(command, groupId);
     } catch (err) {
       console.error('Command execution error:', err);
-      replyText = '系統錯誤，請稍後再試';
+      replyText = isRetriableNetworkError(err)
+        ? '🌐 網路忙線中，請過 30 秒後再試'
+        : '系統錯誤，請稍後再試';
     }
   }
 
