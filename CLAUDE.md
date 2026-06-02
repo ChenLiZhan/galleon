@@ -63,8 +63,7 @@
 - CI/CD (`.github/workflows/deploy.yml`): lint → build + push Docker image to GHCR → SSH to VM for `docker compose pull` + `docker compose up -d`
 - GitHub Actions Secrets needed: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (GHCR auth uses built-in `GITHUB_TOKEN`, no extra secret needed)
 - VM 首次部署需要先登入 GHCR: `echo <PAT> | docker login ghcr.io -u <username> --password-stdin`
-- CI/CD 使用 QEMU + buildx 產生 multi-arch image（amd64 + arm64），支援 x86 和 ARM VM
-- 換 VM 架構（x86 ↔ ARM）不需改 docker-compose.yml，CI 產生的 manifest 會自動匹配
+- CI/CD 只 build `linux/arm64`（VM 是 Oracle Cloud Ampere ARM）。原本 QEMU 模擬 amd64 會在 pnpm install 階段 SIGILL 卡死，所以拿掉了。若換 x86 VM 需改 `.github/workflows/deploy.yml` 的 `platforms`
 - Changing bot command **syntax/parsing** (args, new command type): also update few-shot examples in `SYSTEM_PROMPT` in `src/llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`. Changing only **output rendering** (line format, sort order, added fields in reply text) doesn't require those — SYSTEM_PROMPT is input-only, handleHelp describes command syntax not output, README descriptions are high-level
 - Adding a new Command type: update `Command` union in `types.ts`, `parseCommand()` detection in `commands.ts`, `executeCommand()` switch + handler in `commands.ts`, `SYSTEM_PROMPT` few-shot examples in `llm.ts`, `validateCommand()` in `llm.ts`, `handleHelp()` in `commands.ts`, and `README.md`
 - Not all commands need `groupId`/`user` — stateless commands like `quote` and `help` can ignore the `groupId` param in `executeCommand()`
