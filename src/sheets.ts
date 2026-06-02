@@ -13,6 +13,16 @@ const auth = new google.auth.JWT({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
+// Keep the OAuth token warm in the background so user requests never wait on
+// oauth2.googleapis.com. JWT auto-refreshes within 5 min of expiry — heartbeating
+// every 60s gives ~5 chances to ride out a transient OCI egress outage.
+setInterval(() => {
+  auth.getAccessToken().catch((err: unknown) => {
+    const code = (err as { code?: string }).code ?? 'unknown';
+    console.warn('Background token refresh failed:', code);
+  });
+}, 60_000).unref();
+
 async function ensureHeaders(): Promise<void> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
