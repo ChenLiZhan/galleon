@@ -55,6 +55,7 @@
 - Adding a new column to Google Sheets: prefer appending as the LAST column to avoid shifting existing column indices and breaking row index mappings
 - pnpm lockfile format changes between major versions — use `corepack use pnpm@<version>` to regenerate
 - Dockerfile uses multi-stage build: builder stage compiles TypeScript, production stage only has `dist/` + prod dependencies
+- VM 上的 repo 認證用 **per-repo deploy key**（`~/.ssh/gh_galleon`），透過 `.git/config` 的 `core.sshCommand` 綁定，remote 是 SSH URL。不要用 Personal Access Token —— classic PAT 的 `repo` scope 等於帳號下所有 repo 的完整讀寫，且會以明文留在 `.git/config` 和 shell history。⚠️ `core.sshCommand` 不進版控，重新 clone 後必須重設，否則 CI 的 `git pull` 會失敗。注意這跟 workflow 裡的 `secrets.GITHUB_TOKEN`（Actions 內建、用來登入 GHCR）和 `secrets.SSH_PRIVATE_KEY`（Actions → VM）是三個不同的東西
 - Docker container runs as non-root user `nodejs` (UID 1001)
 - `docker-compose.yml` uses `image: ghcr.io/chenlizhan/galleon:latest` — image 由 GitHub Actions 建置推到 GHCR
 - `docker-compose.yml` uses `env_file: .env` to load secrets — `.env` stays on the VM, never in CI/CD
