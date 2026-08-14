@@ -81,6 +81,16 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 
 需要 Ollama 服務運行於同一 Docker 網路中。
 
+> ⚠️ **目前 production 未啟用。** Ollama 服務已於 2026-08 從 Oracle 上移除，
+> `ChenLiZhan/ollama` repo 也**已從 GitHub 刪除**（不是封存 —— clone 不回來了），
+> VM 上沒有 `ollama` container（實測 `docker ps` 只有
+> caddy / vaultwarden / galleon）。程式碼路徑仍在（`src/llm.ts`），但
+> `http://ollama:11434` 連不到，所以**結構化指令解析失敗時，使用者直接看到
+> 「抱歉，無法理解指令」**，上面那些範例都不會生效。
+>
+> 要恢復這個功能，得在 `web` network 上重新提供一個 Ollama 端點，或把
+> `OLLAMA_URL` 指向外部服務。
+
 ## Tech Stack
 
 | 類別 | 技術 |
@@ -127,19 +137,86 @@ pnpm dev
 
 ### Docker（Production）
 
-```bash
-# 首次部署
-cp .env.example .env
-nano .env  # 填入實際環境變數
-docker compose pull
-docker compose up -d
+VM 上是 **image-based** 部署（與 gateway / sebastian 的「SSH 進去 git pull」不同）：
+image 由 GitHub Actions 建好推到 GHCR，VM 只 pull、不 build（節省記憶體，而且 VM 是
+ARM，本機 build 很慢）。VM 上的 repo checkout 只用來取 `docker-compose.yml`。
 
-# 更新部署（或透過 GitHub Actions 自動觸發）
-docker compose pull
-docker compose up -d
+> 前置條件：**`gateway` 必須已經啟動**。`web` network 由它建立，galleon 這邊是
+> `external: true`；順序反了會得到 `network web not found`，而那個錯誤訊息不會
+>告訴你該先起誰。
+
+#### 首次部署（含整台重建）
+
+```bash
+# 1. clone —— deploy key 認證，core.sshCommand 不進版控，必須手動設
+cd ~/apps
+GIT_SSH_COMMAND="ssh -i ~/.ssh/gh_galleon -o IdentitiesOnly=yes" \
+  git clone git@github.com:ChenLiZhan/galleon.git galleon
+git -C galleon config core.sshCommand "ssh -i ~/.ssh/gh_galleon -o IdentitiesOnly=yes"
+
+# 2. 取回 .env —— 從 fortress，不要手填（見下方「秘密與備份」）
+
+# 3. 登入 GHCR（image 是 private package，沒登入 pull 會 401）
+echo <PAT> | docker login ghcr.io -u <username> --password-stdin
+
+# 4. 啟動
+docker compose pull && docker compose up -d
+curl -s localhost:3000/health    # 期望 OK
 ```
 
-Docker image 由 GitHub Actions 建置並推送到 GHCR，VM 上不做 build（節省記憶體）。
+第 1 步的 `core.sshCommand` 漏掉的話，之後 CI 的部署會失敗 —— GitHub Actions
+的部署步驟第一件事就是 `git pull origin master`。
+
+#### 日常更新
+
+push 到 `master` 即自動部署。手動觸發：`gh workflow run deploy.yml`。
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+## 秘密與備份
+
+`.env` 不進版控，也不進 CI/CD —— 它只存在於 VM 上的 `~/apps/galleon/.env`。
+離機備份在 `ChenLiZhan/fortress`（GitHub private repo），以 age passphrase 加密：
+
+| fortress 檔案 | 還原到 |
+|---|---|
+| `galleon.env.age` | `~/apps/galleon/.env` |
+| `galleon-googlesheets.json.age` | Google service account 金鑰原始檔（見下） |
+
+```bash
+git clone git@github.com:ChenLiZhan/fortress.git ~/fortress
+age -d -o ~/apps/galleon/.env ~/fortress/galleon.env.age
+rm -rf ~/fortress    # 用完即刪，明文不留在 VM 上
+```
+
+> `googlesheets.json` 是從 Google Cloud Console 下載的 service account 金鑰原始檔，
+> **執行時不需要它** —— 程式走 `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`
+> 兩個環境變數（`src/config.ts`），container 也沒有 mount 這個檔。保留它是為了
+> 輪替金鑰時能重新抽出那兩個值。**DR 只要有 `.env` 就能把服務跑起來。**
+
+⚠️ **改過 `.env` 之後要同步回 fortress。** 不同步是不會有任何警告的失效：
+檔案在、解得開、內容是舊的，還原後 bot 起不來而你會以為備份沒問題。
+
+整台 Oracle 重建的完整順序見 `leeLab` repo 的 `DR.md` 情境 A。
+
+### 為什麼沒有備份腳本
+
+galleon **無本地狀態**，所以刻意不做備份 —— 這是判斷結果，不是遺漏：
+
+- 沒有 volume、沒有資料庫、沒有任何檔案寫入（`src/` 裡完全沒有 `fs` 呼叫）
+- 所有持股資料都在 Google Sheets，由 Google 自己保存版本歷史
+- container 整個刪掉重 `docker compose up -d`，不會掉任何資料
+
+代價是**資料的存活改成依賴兩個外部帳號**，而這兩者目前都沒有納入 DR 演練：
+
+| 風險 | 現況 |
+|---|---|
+| Google Sheets 被誤刪 / 改壞 | 只能靠 Google Sheets 內建的版本記錄（未演練） |
+| Service account 金鑰被撤銷 | 需重發並更新 `.env` + fortress |
+
+> `SPREADSHEET_ID` 指向的那份試算表是 galleon 唯一的資料庫。搬移或刪除它等同資料遺失。
 
 ### 本地直接執行
 

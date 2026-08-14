@@ -60,7 +60,8 @@
 - `docker-compose.yml` uses `image: ghcr.io/chenlizhan/galleon:latest` — image 由 GitHub Actions 建置推到 GHCR
 - `docker-compose.yml` uses `env_file: .env` to load secrets — `.env` stays on the VM, never in CI/CD
 - Container name `galleon` is used as DNS hostname by gateway Caddy — do NOT rename without updating `gateway/Caddyfile`
-- Health check: `GET /health` returns `200 OK` — used by both Docker healthcheck and Caddy upstream
+- 只有兩條路由：`GET /health` 與 `POST /callback`（`src/index.ts`）。**`GET /` 回 404 是正常的**，不是服務掛掉 —— 判斷死活一律用 `/health`（compose healthcheck 與 Caddy upstream 都打它）。拿根路徑當存活訊號會得到假警報或假安心，這條教訓已寫進 `leeLab/RUNBOOK.md` 的新增服務 checklist
+- `web` network 是 `external: true` —— **由 `gateway` repo 的 compose 建立**（`name: web, driver: bridge`）。gateway 沒起，galleon `docker compose up` 會直接死在 `network web not found`，而那個錯誤訊息不會告訴你該先起誰
 - CI/CD (`.github/workflows/deploy.yml`): lint → build + push Docker image to GHCR → SSH to VM for `docker compose pull` + `docker compose up -d`
 - GitHub Actions Secrets needed: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (GHCR auth uses built-in `GITHUB_TOKEN`, no extra secret needed)
 - VM 首次部署需要先登入 GHCR: `echo <PAT> | docker login ghcr.io -u <username> --password-stdin`
@@ -76,4 +77,11 @@
 - Extending quote to US/JP stocks: add new API module (e.g., `src/yahoo.ts`), update `parseCommand()` pattern, `validateCommand()` regex, `SYSTEM_PROMPT`, and `handleQuote()` to dispatch by `detectMarket()`
 - `validateCommand()` in `src/llm.ts` mirrors `parseCommand()` validation rules — if validation rules change in `commands.ts`, update `llm.ts` too
 - Ollama cold start: first request after model unload takes extra time (~10-30s) for model loading — 30s timeout configured in `generateCompletion()`
+- ⚠️ **Ollama NLU fallback 在 production 是死的**：`ollama` container 已從 Oracle 移除，`ChenLiZhan/ollama` repo 也**已從 GitHub 刪除**（不是封存，clone 不回來；2026-08，實測 `docker ps` 只有 caddy / vaultwarden / galleon）。要恢復得自己重建一個 Ollama 部署。`src/llm.ts` 的程式碼路徑還在且仍會被呼叫，但一定失敗 → 使用者看到「抱歉，無法理解指令」。改動 `parseCommand()` 時**不要假設有 LLM 兜底**
+- Google Sheets 認證走 `.env` 的 `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`（`google.auth.JWT`），**不是**讀 `googlesheets.json`。那個檔只是金鑰原始檔（`.gitignore` 有擋、備份在 fortress），container 沒有 mount 它 —— 別依賴它存在
+- **OCI egress 會間歇性中斷**，Google API 呼叫因此有兩層對策，改動時別當多餘程式碼刪掉：
+  1. `src/sheets.ts` 每 60s 背景 `auth.getAccessToken()` 保溫。JWT 只在到期前 5 分鐘才自動換新，若剛好撞上斷線，使用者的請求會卡在 `oauth2.googleapis.com`；heartbeat 讓那 5 分鐘內有約 5 次重試機會。用 `.unref()` 所以不會擋住 process 結束
+  2. `src/index.ts` 的 `executeWithRetry()` 對 `ETIMEDOUT` / `ENOTFOUND` / `EAI_AGAIN` 重試一次（間隔 2s），失敗才回「🌐 網路忙線中」；非網路錯誤直接回「系統錯誤」—— 兩種訊息刻意分開，使用者才知道該不該重試
+- `renovate.json` 的 timezone 是 `Asia/Taipei`，但 VM 在東京（Sebastian 用 `Asia/Tokyo`）。兩邊都排週一早上，實務上沒差別；要調時間的話以 Tokyo 為準
+- **galleon 無本地狀態，刻意不做備份**（沒有 volume、`src/` 完全沒有 `fs` 呼叫），資料全在 Google Sheets。它不在 `leeLab/SERVICES.md` 的備份表裡是判斷結果，不是遺漏 —— 理由與殘餘風險見 README 的「為什麼沒有備份腳本」
 - VM path: `~/apps/galleon`
