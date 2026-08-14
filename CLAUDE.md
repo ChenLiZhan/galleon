@@ -100,7 +100,7 @@
 | 新增外部依賴（目前是 Google Sheets API + LINE Messaging API） | `leeLab/SERVICES.md` 的「galleon 外部依賴」那行 |
 | VM 上的 `.env` / service account 金鑰 | `fortress/galleon.env.age`、`fortress/galleon-googlesheets.json.age` |
 | **開始有本地狀態**（volume、寫檔、DB） | 這條最重要：`leeLab/SERVICES.md` 備份表 + 寫備份腳本 + 加進 `leeLab/scripts/verify-backup.sh` 的 target 與 `leelab-verify@.timer` 的 instance |
-| 服務下線 | `leeLab/SERVICES.md` 的**四張表**（服務清單／排程總表／部署管線／備份）逐一移除，加上 `DR.md` 與 `fortress`。⚠️ 目前**沒有停用 checklist** —— `ollama` 就是這樣殘留成一筆指向 404 的記錄 |
+| 服務下線 | `leeLab/SERVICES.md` 的**四張表**（服務清單／排程總表／部署管線／備份）逐一移除，加上 `DR.md` 與 `fortress`。照 `leeLab/CHECKLISTS/decommission.md` 走 |
 
 「galleon 無備份」目前是**判斷結果不是遺漏**（無 volume、`src/` 無 `fs` 呼叫，資料全在 Google Sheets），
 `leeLab/SERVICES.md` 的備份表也是照這個前提寫的。哪天加了狀態卻沒同步，那張表就會從
