@@ -111,7 +111,7 @@ LINE 聊天機器人，用於追蹤股票持股記錄。在群組中 @mention Bo
 - **Webhook URL**：https://galleon.chenlizhan.com/callback
 - **Container Registry**：GHCR (`ghcr.io/chenlizhan/galleon`)
 - **部署方式**：Push 到 `master` → GitHub Actions lint + build Docker image → 推到 GHCR → SSH 到 VM pull + restart
-- **反向代理**：由 [gateway](../gateway) repo 的 Caddy 統一管理 HTTPS 與路由
+- **反向代理**：由 [gateway](https://github.com/ChenLiZhan/Gateway) repo 的 Caddy 統一管理 HTTPS 與路由
 
 ## 環境變數
 

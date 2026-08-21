@@ -25,13 +25,23 @@
 - Never create or import unused library/const/object
 - Input normalization (uppercase, suffix stripping, etc.) belongs in handler functions before external API calls (e.g., `handleQuote()`), NOT in `parseCommand()` — `Command` objects should faithfully represent user input
 
-## LLM Integration
-- LLM inference via shared Ollama service at `http://ollama:11434` (separate `ollama` repo) — used as NLU fallback when `parseCommand()` fails
+## LLM Integration — ⚠️ 目前是死的，不要假設有 LLM 兜底
+
+**這整節描述的是一條在 production 已經斷掉的路徑。** `ollama` container 已從 Oracle
+移除，`ChenLiZhan/ollama` repo 也**已從 GitHub 刪除**（不是封存，clone 不回來；2026-08
+實測 `docker ps` 只有 caddy / vaultwarden / galleon）。程式碼路徑仍在且仍會被呼叫，
+但一定失敗 → 使用者看到「抱歉，無法理解指令」。
+**改動 `parseCommand()` 時不要假設有 LLM 兜底**，也不要把下面這些當成現行行為。
+
+要恢復得在 `web` network 上重新提供一個 Ollama 端點，或把 `OLLAMA_URL` 指向外部服務。
+
+以下是這條路徑**原本**的設計（留著是為了要恢復時有依據）：
+
+- LLM inference via shared Ollama service at `http://ollama:11434` — used as NLU fallback when `parseCommand()` fails
 - LLM module: `src/llm.ts` — `parseNaturalLanguage()` is the public API, returns `Command | null`
 - Ollama API: uses `/api/generate` with `stream: false`, model configured via `OLLAMA_MODEL` env var (default `qwen2.5:7b`)
 - NLU flow: `parseCommand()` → fails → `parseNaturalLanguage()` → `validateCommand()` runtime schema check → `executeCommand()` or fallback error
 - Optional env vars in `config.ts` use `process.env.X ?? 'default'` pattern (not `requireEnv()`), so missing Ollama config won't crash the bot
-- Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
 
 ## Gotchas
 - Docker log rotation configured: `json-file` driver, `max-size: 10m`, `max-file: 3` — all services must include this to prevent disk exhaustion
