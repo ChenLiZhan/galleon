@@ -98,22 +98,6 @@
 
 ## leeLab 契約
 
-本 repo 被 meta repo **`leeLab`**（`~/apps/leeLab`，private）索引。leeLab 只放**索引**不放定義，
-所以這裡的定義改了它不會自己知道。下列改動必須在**同一次變更**裡一起做完——
-事後補的成功率是零，因為那時你已經不記得改了哪些欄位。
+動到部署、排程、備份產物、對外位址、`.env` 或服務存廢時，**同一次變更**裡要打開
+[`.leelab-contract.md`](.leelab-contract.md) 逐列對照同步。
 
-| 你改了 | 就要同步 |
-|---|---|
-| `docker-compose.yml` 的 port / container name / image | `leeLab/SERVICES.md` Oracle 服務表（container name 同時是 Caddy upstream DNS） |
-| 對外域名（連帶 `Gateway/Caddyfile`） | `leeLab/SERVICES.md` Oracle 服務表 |
-| `.github/workflows/deploy.yml` 的流程（GHCR、平台、部署動作） | `leeLab/SERVICES.md` 部署管線表 |
-| 新增外部依賴（目前是 Google Sheets API + LINE Messaging API） | `leeLab/SERVICES.md` 的「galleon 外部依賴」那行 |
-| VM 上的 `.env` / service account 金鑰 | `fortress/galleon.env.age`、`fortress/galleon-googlesheets.json.age` |
-| **開始有本地狀態**（volume、寫檔、DB） | 這條最重要：`leeLab/SERVICES.md` 備份表 + 寫備份腳本 + 加進 `leeLab/scripts/verify-backup.sh` 的 target 與 `leelab-verify@.timer` 的 instance |
-| 服務下線 | `leeLab/SERVICES.md` 的**四張表**（服務清單／排程總表／部署管線／備份）逐一移除，加上 `DR.md` 與 `fortress`。照 `leeLab/CHECKLISTS/decommission.md` 走 |
-
-「galleon 無備份」目前是**判斷結果不是遺漏**（無 volume、`src/` 無 `fs` 呼叫，資料全在 Google Sheets），
-`leeLab/SERVICES.md` 的備份表也是照這個前提寫的。哪天加了狀態卻沒同步，那張表就會從
-「刻意不備份」悄悄變成「以為有備份」——沒有任何告警會提醒你。
-
-驗收：`~/apps/leeLab/scripts/check-drift.sh oracle`
